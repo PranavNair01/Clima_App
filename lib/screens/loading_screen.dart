@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:clima/services/location.dart';
+import 'package:clima/services/networking.dart';
+import 'location_screen.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+
+const String apiKey = 'ac69515796e0ac5fb9303bcef657eece';
 
 class LoadingScreen extends StatefulWidget {
   @override
@@ -8,32 +13,34 @@ class LoadingScreen extends StatefulWidget {
 
 class _LoadingScreenState extends State<LoadingScreen> {
 
-  void getLocation() async{
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.deniedForever ||
-          permission == LocationPermission.denied) {
-        print('Permission is not granted, asking for permission.');
-        LocationPermission permission = await Geolocator.requestPermission();
-      }
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.low);
-      print(position);
-    } catch(err){
-      print('$err');
-    }
+  @override
+  void initState() {
+    super.initState();
+    getLocationData();
   }
+
+  void getLocationData() async {
+   Location location = Location();
+   await location.getCurrentLocation();
+   NetworkHelper networkHelper = NetworkHelper('https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=${apiKey}&units=metric');
+   var weatherData = await networkHelper.getData();
+
+   Navigator.push(
+       context,
+       MaterialPageRoute(builder:
+           (context) {
+     return LocationScreen(locationWeather: weatherData,);
+   }
+   ),
+   );
+    }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: RaisedButton(
-          onPressed: () {
-            getLocation();//Get the current location
-          },
-          child: Text('Get Location'),
-        ),
+      body: SpinKitFadingCircle(
+        color: Colors.white,
+        size: 100.0,
       ),
     );
   }
